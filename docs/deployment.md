@@ -19,7 +19,17 @@ COOKIE_SECURE=true
 SESSION_DAYS=7
 ```
 
-The requirements include Psycopg 3 for production PostgreSQL while local development continues to use SQLite. The application automatically converts plain `postgresql://` and legacy `postgres://` values to the explicit `postgresql+psycopg://` dialect, so a standard Supabase connection string is valid.
+The requirements include Psycopg 3 for production PostgreSQL while local development continues to use SQLite. The application automatically converts plain `postgresql://` and legacy `postgres://` values to the explicit `postgresql+psycopg://` dialect.
+
+### Render and Supabase networking
+
+Do not use Supabase's direct database host (`db.<project-ref>.supabase.co`) for a Render service if it resolves to IPv6. Render may report `Network is unreachable` when it cannot route to that IPv6 address. In Supabase, open **Connect**, choose the **Session pooler**, and use the pooler host and port shown there. The value should look like:
+
+```text
+postgresql://postgres.<project-ref>:YOUR_URL_ENCODED_PASSWORD@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+Use the exact host, region, username, and port copied from Supabase. Keep the password URL-encoded and do not include square brackets or the `DATABASE_URL=` prefix in Render's value. The Session Pooler on port `5432` is preferred here because the application uses normal long-lived SQLAlchemy connections. The Transaction Pooler on port `6543` can be used if Supabase's Connect panel directs you to it.
 
 ## Frontend variable
 
@@ -29,7 +39,7 @@ VITE_API_URL=https://your-api.example
 
 ## Deployment checklist
 
-1. Create the PostgreSQL database and set `DATABASE_URL`.
+1. Create the PostgreSQL database, copy the Supabase Session Pooler connection string, and set it as `DATABASE_URL`.
 2. Set a unique `APP_SECRET_KEY`; never use the development default.
 3. Set the exact frontend origin and enable `COOKIE_SECURE=true`.
 4. Deploy the backend and verify `/health`, `/ready`, and `/docs`.
