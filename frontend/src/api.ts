@@ -39,6 +39,7 @@ export type Grant = {
 export type GrantList = { items: Grant[]; page: number; page_size: number; total: number }
 export type SavedGrant = { id: string; status: string; notes: string; follow_up_at: string | null; created_at: string; grant: Grant }
 export type Dashboard = { saved_count: number; active_count: number; applied_count: number; pipeline_amount_cents: number; upcoming_deadlines: SavedGrant[] }
+export type Explanation = { explanation: string; model: string; source_url: string }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -74,4 +75,12 @@ export const api = {
     request<SavedGrant>(`/api/v1/saved-grants/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
   deleteSavedGrant: (id: string) => request<void>(`/api/v1/saved-grants/${id}`, { method: 'DELETE' }),
   dashboard: () => request<Dashboard>('/api/v1/dashboard'),
+  explanation: (grantId: string) => request<Explanation>(`/api/v1/grants/${grantId}/explanation`, { method: 'POST' }),
+  runReminders: () => request<{ created: number }>('/api/v1/reminders/run', { method: 'POST' }),
+  reminders: () => request<Array<{ id: string; grant_title: string; remind_at: string; status: string }>>('/api/v1/reminders'),
+  pipelineReport: async () => {
+    const response = await fetch(`${API_URL}/api/v1/reports/pipeline`, { credentials: 'include', method: 'POST' })
+    if (!response.ok) throw new Error('Unable to generate report')
+    return response.blob()
+  },
 }

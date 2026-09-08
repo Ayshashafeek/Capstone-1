@@ -127,3 +127,19 @@ class MatchResult(Base):
     matched_criteria: Mapped[list[str]] = mapped_column(JSON, default=list)
     missing_criteria: Mapped[list[str]] = mapped_column(JSON, default=list)
     calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class Reminder(Base):
+    __tablename__ = "reminders"
+    __table_args__ = (UniqueConstraint("saved_grant_id", "remind_at", name="uq_reminder_saved_grant_time"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    saved_grant_id: Mapped[str] = mapped_column(ForeignKey("saved_grants.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    remind_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    channel: Mapped[str] = mapped_column(String(20), default="in_app")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+    saved_grant: Mapped[SavedGrant] = relationship()

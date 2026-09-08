@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Cookie, Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,7 +10,9 @@ from app.auth import create_session, hash_password, revoke_session, verify_passw
 from app.config import settings
 from app.db import get_db, init_db
 from app.dependencies import get_current_user
-from app.models import Grant, MatchResult, Organization, SavedGrant, User
+from app.models import Grant, MatchResult, Organization, Reminder, SavedGrant, User
+from app.services.ai import build_explanation
+from app.services.reporting import create_pipeline_pdf
 from app.schemas import (
     DashboardResponse,
     AuthRequest,
@@ -30,7 +33,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_origin],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 
@@ -168,7 +171,7 @@ def list_grants(
 @app.get("/api/v1/grants/{grant_id}", response_model=GrantResponse)
 def get_grant(
     grant_id: str,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> GrantResponse:
     grant = db.get(Grant, grant_id)
@@ -297,3 +300,47 @@ def saved_grant_response(saved: SavedGrant, organization: Organization, db: Sess
         created_at=saved.created_at,
         grant=grant_response(saved.grant, organization, True, db),
     )
+
+
+@app.post("/api/v1/grants/{grant_id}/explanation")
+def explain_grant(grant_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict[str, object]:
+    grant = db.get(Grant, grant_id)
+    if not grant or grant.status != "active":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grant not found")
+    score, reasons, missing = calculate_match(grant, current_user.organization)
+    explanation = build_explanation(grant, current_user.organization, score or 0, reasons, missing)
+    return {"explanation": explanation, "model": "deterministic-fallback", "source_url": grant.canonical_url}
+
+
+@app.post("/api/v1/reminders/run")
+def run_reminders(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict[str, int]:
+    now = datetime.now(timezone.utc)
+    saved = list(db.scalars(select(SavedGrant).where(SavedGrant.organization_id == current_user.organization.id)))
+    created = 0
+    for item in saved:
+        if not item.grant.deadline or item.status in {"rejected", "archived"}:
+            continue
+        deadline_at = item.grant.deadline.replace(tzinfo=timezone.utc)
+        days_until = (deadline_at.date() - now.date()).days
+        if days_until not in {30, 14, 3}:
+            continue
+        remind_at = deadline_at - timedelta(days=days_until)
+        exists = db.scalar(select(Reminder).where(Reminder.saved_grant_id == item.id, Reminder.remind_at == remind_at))
+        if not exists:
+            db.add(Reminder(saved_grant_id=item.id, user_id=current_user.id, remind_at=remind_at))
+            created += 1
+    db.commit()
+    return {"created": created}
+
+
+@app.get("/api/v1/reminders")
+def list_reminders(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[dict[str, object]]:
+    reminders = list(db.scalars(select(Reminder).where(Reminder.user_id == current_user.id).order_by(Reminder.remind_at.asc())))
+    return [{"id": item.id, "grant_title": item.saved_grant.grant.title, "remind_at": item.remind_at, "status": item.status} for item in reminders]
+
+
+@app.post("/api/v1/reports/pipeline")
+def generate_pipeline_report(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> FileResponse:
+    saved = list(db.scalars(select(SavedGrant).where(SavedGrant.organization_id == current_user.organization.id).order_by(SavedGrant.updated_at.desc())))
+    path = create_pipeline_pdf(current_user.organization, saved)
+    return FileResponse(path, media_type="application/pdf", filename="grantbridge-pipeline.pdf")

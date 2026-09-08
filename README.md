@@ -36,7 +36,7 @@ See the [complete blueprint](docs/solution-blueprint.md) for the ranked alternat
 
 ## Status
 
-Milestone 3 complete: authentication, organization profile setup, a 30-record source-backed grant catalogue, deterministic explainable matching, organization-scoped saved grants, status and notes tracking, dashboard totals, and a responsive funding pipeline are implemented. AI explanations, reminders, and reporting begin in Milestone 4.
+Milestone 4 complete: authentication, organization profile setup, a 30-record source-backed grant catalogue, deterministic explainable matching, saved pipeline management, validated fit explanations, idempotent deadline reminders, and downloadable PDF reports are implemented. Milestone 5 focuses on deployment polish and evidence.
 
 ## Run locally
 
@@ -55,6 +55,8 @@ cd backend
 .\.venv\Scripts\Activate.ps1
 python -m app.ingestion
 ```
+
+Milestone 4 pipeline actions are available from the Funding pipeline view: **Explain fit** uses source-grounded deterministic fallback text, **Check reminders** creates calendar-based in-app reminders for 30/14/3-day windows, and **Download PDF** generates the current pipeline report.
 
 Frontend, in a second terminal:
 
