@@ -8,13 +8,13 @@ It collects public grant opportunities, ranks them against an organization's pro
 
 Small organizations often have limited fundraising staff. Grant information is scattered across government and foundation websites, deadlines are easy to miss, and a search result rarely explains whether an opportunity is genuinely suitable. GrantBridge turns public information into a focused, auditable workflow without pretending to make funding decisions for the organization.
 
-## Planned MVP
+## MVP capabilities
 
 - Account signup, login, and organization profile
 - Curated public grant source ingestion
 - Normalized grant search with filters
 - Explainable profile-to-grant matching
-- Optional local LLM explanations with deterministic fallback
+- Source-grounded fit explanations with deterministic fallback
 - Saved opportunities and deadline reminders
 - Dashboard and downloadable PDF funding pipeline report
 - Free deployment with a React frontend, FastAPI backend, and PostgreSQL
@@ -36,7 +36,7 @@ See the [complete blueprint](docs/solution-blueprint.md) for the ranked alternat
 
 ## Status
 
-Milestone 4 complete: authentication, organization profile setup, a 30-record source-backed grant catalogue, deterministic explainable matching, saved pipeline management, validated fit explanations, idempotent deadline reminders, and downloadable PDF reports are implemented. Milestone 5 focuses on deployment polish and evidence.
+Milestone 5 complete: the product workflow is implemented, documented, covered by automated checks, and prepared for free-tier deployment with CI, Docker, Render-style backend configuration, and Vercel frontend configuration.
 
 ## Run locally
 
@@ -66,3 +66,14 @@ npm run dev
 ```
 
 The frontend runs at `http://localhost:5173` and the API at `http://localhost:8000`.
+
+## Deployment and evidence
+
+- API reference: [docs/api.md](docs/api.md)
+- Architecture: [docs/architecture.md](docs/architecture.md)
+- Free deployment guide: [docs/deployment.md](docs/deployment.md)
+- Testing and manual acceptance path: [docs/testing.md](docs/testing.md)
+- Milestone 5 evidence: [docs/milestones/milestone-05.md](docs/milestones/milestone-05.md)
+- Capstone document outline: [docs/My 10x Solution - Your Name Surname.md](docs/My%2010x%20Solution%20-%20Your%20Name%20Surname.md)
+
+The repository includes `.github/workflows/ci.yml`. Every push to `main` runs the backend test suite and frontend production build.

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: grantbridge-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /ready
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_SECRET_KEY
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"

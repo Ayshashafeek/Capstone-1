@@ -63,6 +63,12 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/ready")
+def ready(db: Session = Depends(get_db)) -> dict[str, str]:
+    db.execute(select(1))
+    return {"status": "ready", "database": "ok"}
+
+
 @app.post("/api/v1/auth/signup", response_model=MeResponse, status_code=status.HTTP_201_CREATED)
 def signup(payload: AuthRequest, response: Response, db: Session = Depends(get_db)) -> MeResponse:
     normalized_email = payload.email.lower()
