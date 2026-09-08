@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -97,3 +97,33 @@ class Grant(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     source: Mapped[GrantSource] = relationship(back_populates="grants")
+
+
+class SavedGrant(Base):
+    __tablename__ = "saved_grants"
+    __table_args__ = (UniqueConstraint("organization_id", "grant_id", name="uq_saved_grant_organization_grant"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    grant_id: Mapped[str] = mapped_column(ForeignKey("grants.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="saved", index=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    follow_up_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+    organization: Mapped[Organization] = relationship()
+    grant: Mapped[Grant] = relationship()
+
+
+class MatchResult(Base):
+    __tablename__ = "match_results"
+    __table_args__ = (UniqueConstraint("organization_id", "grant_id", name="uq_match_organization_grant"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    grant_id: Mapped[str] = mapped_column(ForeignKey("grants.id", ondelete="CASCADE"), index=True)
+    score: Mapped[int] = mapped_column(Integer)
+    matched_criteria: Mapped[list[str]] = mapped_column(JSON, default=list)
+    missing_criteria: Mapped[list[str]] = mapped_column(JSON, default=list)
+    calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)

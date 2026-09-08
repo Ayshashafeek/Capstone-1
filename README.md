@@ -36,7 +36,7 @@ See the [complete blueprint](docs/solution-blueprint.md) for the ranked alternat
 
 ## Status
 
-Milestone 2 complete: authentication, organization profile setup, a 30-record source-backed grant catalogue, idempotent seed ingestion, authenticated search/filter/pagination endpoints, and a responsive catalogue interface are implemented. Matching and saved pipeline workflows begin in Milestone 3.
+Milestone 3 complete: authentication, organization profile setup, a 30-record source-backed grant catalogue, deterministic explainable matching, organization-scoped saved grants, status and notes tracking, dashboard totals, and a responsive funding pipeline are implemented. AI explanations, reminders, and reporting begin in Milestone 4.
 
 ## Run locally
 

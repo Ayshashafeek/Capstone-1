@@ -31,8 +31,14 @@ export type Grant = {
   last_verified_at: string
   source_name: string
   source_type: string
+  match_score: number | null
+  match_reasons: string[]
+  missing_criteria: string[]
+  is_saved: boolean
 }
 export type GrantList = { items: Grant[]; page: number; page_size: number; total: number }
+export type SavedGrant = { id: string; status: string; notes: string; follow_up_at: string | null; created_at: string; grant: Grant }
+export type Dashboard = { saved_count: number; active_count: number; applied_count: number; pipeline_amount_cents: number; upcoming_deadlines: SavedGrant[] }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -62,4 +68,10 @@ export const api = {
     Object.entries(params).forEach(([key, value]) => { if (value) query.set(key, String(value)) })
     return request<GrantList>(`/api/v1/grants?${query.toString()}`)
   },
+  savedGrants: () => request<SavedGrant[]>('/api/v1/saved-grants'),
+  saveGrant: (grant_id: string) => request<SavedGrant>('/api/v1/saved-grants', { method: 'POST', body: JSON.stringify({ grant_id }) }),
+  updateSavedGrant: (id: string, payload: { status: string; notes: string; follow_up_at: string | null }) =>
+    request<SavedGrant>(`/api/v1/saved-grants/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteSavedGrant: (id: string) => request<void>(`/api/v1/saved-grants/${id}`, { method: 'DELETE' }),
+  dashboard: () => request<Dashboard>('/api/v1/dashboard'),
 }

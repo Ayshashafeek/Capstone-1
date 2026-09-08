@@ -61,6 +61,10 @@ class GrantResponse(BaseModel):
     last_verified_at: datetime
     source_name: str
     source_type: str
+    match_score: int | None = None
+    match_reasons: list[str] = []
+    missing_criteria: list[str] = []
+    is_saved: bool = False
 
 
 class GrantListResponse(BaseModel):
@@ -68,3 +72,30 @@ class GrantListResponse(BaseModel):
     page: int
     page_size: int
     total: int
+
+
+class SavedGrantCreate(BaseModel):
+    grant_id: str
+
+
+class SavedGrantUpdate(BaseModel):
+    status: str = Field(pattern="^(saved|reviewing|applied|rejected|won|archived)$")
+    notes: str = Field(default="", max_length=3000)
+    follow_up_at: datetime | None = None
+
+
+class SavedGrantResponse(BaseModel):
+    id: str
+    status: str
+    notes: str
+    follow_up_at: datetime | None
+    created_at: datetime
+    grant: GrantResponse
+
+
+class DashboardResponse(BaseModel):
+    saved_count: int
+    active_count: int
+    applied_count: int
+    pipeline_amount_cents: int
+    upcoming_deadlines: list[SavedGrantResponse]
