@@ -19,7 +19,7 @@ COOKIE_SECURE=true
 SESSION_DAYS=7
 ```
 
-The current requirements do not include a PostgreSQL driver because local development uses SQLite. Add `psycopg[binary]` to `backend/requirements.txt` before connecting a production PostgreSQL database, then rebuild the service.
+The requirements include `psycopg[binary]` for production PostgreSQL while local development continues to use SQLite. Rebuild the service after changing the database driver or connection string.
 
 ## Frontend variable
 
