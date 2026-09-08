@@ -12,14 +12,14 @@ Free-tier limits change. Record the provider, plan, and deployment date in the f
 ## Backend variables
 
 ```text
-DATABASE_URL=postgresql+psycopg://...
+DATABASE_URL=postgresql://...
 APP_SECRET_KEY=<long random value>
 FRONTEND_ORIGIN=https://your-frontend.example
 COOKIE_SECURE=true
 SESSION_DAYS=7
 ```
 
-The requirements include `psycopg[binary]` for production PostgreSQL while local development continues to use SQLite. Rebuild the service after changing the database driver or connection string.
+The requirements include Psycopg 3 for production PostgreSQL while local development continues to use SQLite. The application automatically converts plain `postgresql://` and legacy `postgres://` values to the explicit `postgresql+psycopg://` dialect, so a standard Supabase connection string is valid.
 
 ## Frontend variable
 
