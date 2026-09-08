@@ -36,7 +36,7 @@ See the [complete blueprint](docs/solution-blueprint.md) for the ranked alternat
 
 ## Status
 
-Milestone 1 complete: authentication, organization profile setup, protected API routes, backend tests, and a responsive frontend shell are implemented. Grant browsing begins in Milestone 2.
+Milestone 2 complete: authentication, organization profile setup, a 30-record source-backed grant catalogue, idempotent seed ingestion, authenticated search/filter/pagination endpoints, and a responsive catalogue interface are implemented. Matching and saved pipeline workflows begin in Milestone 3.
 
 ## Run locally
 
@@ -46,6 +46,14 @@ Backend:
 cd backend
 .\.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload
+```
+
+Seed the demonstration catalogue in a separate backend terminal:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m app.ingestion
 ```
 
 Frontend, in a second terminal:

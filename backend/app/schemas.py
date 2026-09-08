@@ -42,3 +42,29 @@ class OrganizationResponse(OrganizationUpdate):
 class MeResponse(BaseModel):
     user: UserResponse
     organization: OrganizationResponse
+
+
+class GrantResponse(BaseModel):
+    id: str
+    title: str
+    funder: str
+    summary: str
+    eligibility_text: str
+    focus_areas: list[str]
+    eligible_regions: list[str]
+    applicant_types: list[str]
+    amount_min_cents: int | None
+    amount_max_cents: int | None
+    deadline: datetime | None
+    application_url: str
+    canonical_url: str
+    last_verified_at: datetime
+    source_name: str
+    source_type: str
+
+
+class GrantListResponse(BaseModel):
+    items: list[GrantResponse]
+    page: int
+    page_size: int
+    total: int

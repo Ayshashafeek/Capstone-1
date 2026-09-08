@@ -1,4 +1,6 @@
-from fastapi import Cookie, Depends, FastAPI, HTTPException, Response, status
+from datetime import datetime
+
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,9 +9,11 @@ from app.auth import create_session, hash_password, revoke_session, verify_passw
 from app.config import settings
 from app.db import get_db, init_db
 from app.dependencies import get_current_user
-from app.models import Organization, User
+from app.models import Grant, Organization, User
 from app.schemas import (
     AuthRequest,
+    GrantListResponse,
+    GrantResponse,
     LoginRequest,
     MeResponse,
     OrganizationResponse,
@@ -116,3 +120,74 @@ def update_organization(
     db.commit()
     db.refresh(organization)
     return OrganizationResponse.model_validate(organization)
+
+
+@app.get("/api/v1/grants", response_model=GrantListResponse)
+def list_grants(
+    search: str | None = Query(default=None, max_length=100),
+    focus_area: str | None = Query(default=None, max_length=80),
+    region: str | None = Query(default=None, max_length=80),
+    deadline_before: datetime | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=12, ge=1, le=50),
+    _: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> GrantListResponse:
+    grants = list(db.scalars(select(Grant).where(Grant.status == "active").order_by(Grant.deadline.asc(), Grant.title.asc())))
+    search_term = search.strip().lower() if search else None
+    focus_term = focus_area.strip().lower() if focus_area else None
+    region_term = region.strip().lower() if region else None
+
+    def matches(grant: Grant) -> bool:
+        if search_term and search_term not in f"{grant.title} {grant.funder} {grant.summary}".lower():
+            return False
+        if focus_term and not any(focus_term in value.lower() for value in grant.focus_areas):
+            return False
+        if region_term and not any(region_term in value.lower() for value in grant.eligible_regions):
+            return False
+        if deadline_before and (not grant.deadline or grant.deadline > deadline_before):
+            return False
+        return True
+
+    filtered = [grant for grant in grants if matches(grant)]
+    start = (page - 1) * page_size
+    items = filtered[start:start + page_size]
+    return GrantListResponse(
+        items=[grant_response(grant) for grant in items],
+        page=page,
+        page_size=page_size,
+        total=len(filtered),
+    )
+
+
+@app.get("/api/v1/grants/{grant_id}", response_model=GrantResponse)
+def get_grant(
+    grant_id: str,
+    _: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> GrantResponse:
+    grant = db.get(Grant, grant_id)
+    if not grant or grant.status != "active":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Grant not found")
+    return grant_response(grant)
+
+
+def grant_response(grant: Grant) -> GrantResponse:
+    return GrantResponse(
+        id=grant.id,
+        title=grant.title,
+        funder=grant.funder,
+        summary=grant.summary,
+        eligibility_text=grant.eligibility_text,
+        focus_areas=grant.focus_areas,
+        eligible_regions=grant.eligible_regions,
+        applicant_types=grant.applicant_types,
+        amount_min_cents=grant.amount_min_cents,
+        amount_max_cents=grant.amount_max_cents,
+        deadline=grant.deadline,
+        application_url=grant.application_url,
+        canonical_url=grant.canonical_url,
+        last_verified_at=grant.last_verified_at,
+        source_name=grant.source.name,
+        source_type=grant.source.source_type,
+    )
